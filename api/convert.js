@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
       return res.json({
         success: true,
         placeId,
-        reviewUrl: `https://search.google.com/local/writereview?placeid=${placeId}`,
+        reviewUrl: `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`,
         resolvedUrl: fullUrl
       });
     }
