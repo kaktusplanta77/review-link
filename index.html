@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maps → Review Link</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5; color: #222; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header {
+      background: #fff; padding: 40px 24px; text-align: center;
+      border-bottom: 3px solid #1a73e8;
+    }
+    header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    header h1 span { color: #1a73e8; }
+    header p { color: #666; margin-top: 6px; font-size: 15px; }
+    .container { flex: 1; max-width: 640px; margin: 0 auto; padding: 40px 24px; width: 100%; }
+    label { font-weight: 600; font-size: 15px; display: block; margin-bottom: 8px; }
+    .input-row { display: flex; gap: 10px; }
+    .input-row input {
+      flex: 1; padding: 14px 18px; border: 2px solid #ddd; border-radius: 12px;
+      font-size: 15px; outline: none; transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: #1a73e8; }
+    .input-row button {
+      padding: 14px 28px; background: #1a73e8; color: #fff; border: none;
+      border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s; white-space: nowrap;
+    }
+    .input-row button:hover { background: #1557b0; }
+    .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 24px; padding: 20px; border-radius: 14px;
+      display: none;
+    }
+    .result.success { display: block; background: #e8f5e9; border: 1px solid #a5d6a7; }
+    .result.error { display: block; background: #ffebee; border: 1px solid #ef9a9a; }
+    .result h3 { font-size: 16px; margin-bottom: 8px; }
+    .result.success h3 { color: #2e7d32; }
+    .result.error h3 { color: #c62828; }
+    .result .field { margin-top: 10px; }
+    .result .field label { font-size: 12px; color: #666; margin-bottom: 2px; font-weight: 500; }
+    .result .field .value {
+      background: #fff; padding: 10px 14px; border-radius: 8px;
+      font-size: 14px; word-break: break-all; border: 1px solid #e0e0e0;
+    }
+    .copy-btn {
+      margin-top: 10px; padding: 8px 18px; background: #fff; border: 1px solid #1a73e8;
+      color: #1a73e8; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #1a73e8; color: #fff; }
+    .copy-btn.copied { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+    .example {
+      margin-top: 16px; font-size: 13px; color: #888;
+    }
+    .example a { color: #1a73e8; cursor: pointer; text-decoration: underline; }
+    footer {
+      text-align: center; padding: 20px; font-size: 13px; color: #999;
+    }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<header>
+  <h1><span>maps</span> → review link</h1>
+  <p>Konvertera en Google Maps-länk till en recensionslänk</p>
+</header>
+<div class="container">
+  <label for="urlInput">Klistra in din Maps-länk</label>
+  <div class="input-row">
+    <input id="urlInput" type="url" placeholder="https://maps.app.goo.gl/... eller full Maps-URL" autofocus>
+    <button id="convertBtn" onclick="convert()">Convert</button>
+  </div>
+  <p class="example">Exempel: <a onclick="useExample()">maps.app.goo.gl/XeXtHJQSL7RRwMpK9</a></p>
+
+  <div id="result" class="result"></div>
+</div>
+<footer>Paste a Google Maps link → get a direct review link</footer>
+
+<script>
+async function convert() {
+  const input = document.getElementById('urlInput');
+  const btn = document.getElementById('convertBtn');
+  const result = document.getElementById('result');
+  const url = input.value.trim();
+
+  if (!url) {
+    result.className = 'result error';
+    result.innerHTML = '<h3>⚠️ Ange en URL</h3><p>Klistra in en Google Maps-länk.</p>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Konverterar...';
+  result.className = 'result';
+  result.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/convert?url=' + encodeURIComponent(url));
+    const data = await res.json();
+
+    if (data.success && data.reviewUrl) {
+      result.className = 'result success';
+      result.innerHTML = `
+        <h3>✅ Redo!</h3>
+        <div class="field">
+          <label>Recensionslänk</label>
+          <div class="value" id="reviewUrl">${data.reviewUrl}</div>
+        </div>
+        <button class="copy-btn" onclick="copyUrl()">📋 Kopiera</button>
+        <div class="field">
+          <label>Place ID</label>
+          <div class="value">${data.placeId || data.cid || '-'}</div>
+        </div>
+        <div class="field">
+          <label>Resolved URL</label>
+          <div class="value">${data.resolvedUrl}</div>
+        </div>
+      `;
+    } else {
+      result.className = 'result error';
+      result.innerHTML = `
+        <h3>❌ Kunde inte hitta Place ID</h3>
+        <p>${data.error || 'Okänt fel'}</p>
+        ${data.resolvedUrl ? `<div class="field"><label>Resolved URL</label><div class="value">${data.resolvedUrl}</div></div>` : ''}
+        <p style="margin-top:10px;font-size:13px;color:#888;">Tips: Öppna Maps-länken i en webbläsare och kopiera hela adressen från adressfältet.</p>
+      `;
+    }
+  } catch (err) {
+    result.className = 'result error';
+    result.innerHTML = '<h3>❌ Nätverksfel</h3><p>Kunde inte nå servern. Försök igen.</p>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Convert';
+  }
+}
+
+function useExample() {
+  document.getElementById('urlInput').value = 'https://maps.app.goo.gl/XeXtHJQSL7RRwMpK9';
+  convert();
+}
+
+function copyUrl() {
+  const el = document.getElementById('reviewUrl');
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ Kopierad!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Kopiera';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// Enter key to convert
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') convert();
+});
+</script>
+</body>
+</html>

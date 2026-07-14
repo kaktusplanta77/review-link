@@ -1,0 +1,12 @@
+{
+  "name": "review-link",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Maps link to Review link converter",
+  "scripts": {
+    "dev": "node api/convert.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}
