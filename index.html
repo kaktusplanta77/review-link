@@ -131,7 +131,8 @@ async function convert() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Följer redirect...';
   result.className = 'result';
-  result.style.display = 'none';
+  result.innerHTML = '<p style="padding:10px;color:#888;text-align:center;">Följer redirect... ⏳</p>';
+  result.style.display = 'block';
 
   try {
     const res = await fetch('/api/convert?url=' + encodeURIComponent(url));
@@ -163,6 +164,7 @@ function showResult(placeId, reviewUrl, resolvedUrl) {
 
   const result = document.getElementById('result');
   result.className = 'result success';
+  result.style.display = 'block';
   result.innerHTML = `
     <h3>✅ Redo!</h3>
     <div class="field">
