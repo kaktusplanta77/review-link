@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
 
     // Olika mönster att extrahera Place ID från Maps-URL
     if (!placeId) {
-      const m = fullUrl.match(/!1s([A-Za-z0-9_\-]+)!/);
+      const m = fullUrl.match(/!1s([A-Za-z0-9_\-:?]+)!/);
       if (m?.[1]) placeId = m[1];
     }
     if (!placeId) {
