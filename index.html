@@ -15,9 +15,9 @@
       background: #fff; padding: 40px 24px; text-align: center;
       border-bottom: 3px solid #1a73e8;
     }
-    header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    header h1 { font-size: 28px; font-weight: 800; }
     header h1 span { color: #1a73e8; }
-    header p { color: #666; margin-top: 6px; font-size: 15px; }
+    header p { color: #666; margin-top: 4px; font-size: 15px; }
     .container { flex: 1; max-width: 640px; margin: 0 auto; padding: 40px 24px; width: 100%; }
     label { font-weight: 600; font-size: 15px; display: block; margin-bottom: 8px; }
     .input-row { display: flex; gap: 10px; }
@@ -32,6 +32,7 @@
       transition: background 0.2s; white-space: nowrap;
     }
     .input-row button:hover { background: #1557b0; }
+    .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
     .result {
       margin-top: 24px; padding: 20px; border-radius: 14px;
       display: none;
@@ -54,6 +55,13 @@
     }
     .copy-btn:hover { background: #1a73e8; color: #fff; }
     .copy-btn.copied { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.6s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .guide {
       margin-top: 32px; padding: 20px; background: #fff; border-radius: 14px;
       border: 1px solid #e0e0e0; font-size: 14px; line-height: 1.6;
@@ -61,10 +69,7 @@
     .guide h3 { font-size: 15px; margin-bottom: 8px; color: #333; }
     .guide ol { padding-left: 20px; color: #555; }
     .guide ol li { margin-bottom: 6px; }
-    .guide code {
-      background: #f0f0f0; padding: 2px 6px; border-radius: 4px;
-      font-size: 13px; word-break: break-all;
-    }
+    .guide code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; word-break: break-all; }
     footer { text-align: center; padding: 20px; font-size: 13px; color: #999; }
   </style>
 </head>
@@ -74,31 +79,37 @@
   <p>Konvertera en Google Maps-länk till en recensionslänk</p>
 </header>
 <div class="container">
-  <label for="urlInput">Klistra in din Maps-URL (fullständig)</label>
+  <label for="urlInput">Klistra in din Maps-länk</label>
   <div class="input-row">
-    <input id="urlInput" type="url" placeholder="https://www.google.com/maps/place/..." autofocus>
+    <input id="urlInput" type="url" placeholder="maps.app.goo.gl/... eller full Maps-URL" autofocus>
     <button id="convertBtn" onclick="convert()">Convert</button>
   </div>
 
   <div id="result" class="result"></div>
 
   <div class="guide">
-    <h3>📖 Så här får du rätt URL</h3>
-    <ol>
-      <li>Öppna din Maps-länk i en webbläsare</li>
-      <li>Kopiera HELA adressen från adressfältet (börjar med <code>https://www.google.com/maps/...</code>)</li>
-      <li>Klistra in den här och tryck Convert</li>
-    </ol>
-    <p style="margin-top:10px;color:#888;font-size:13px;">
-      💡 Korta <code>maps.app.goo.gl</code>-länkar fungerar inte direkt — öppna dem först och kopiera den fulla URL:en.
-    </p>
+    <h3>📖 Stödjer</h3>
+    <ul style="padding-left:20px;color:#555;">
+      <li>✅ Korta <b>goo.gl</b>-länkar — funkar direkt</li>
+      <li>✅ Fullständiga <b>maps.google.com</b>-URL:er</li>
+    </ul>
   </div>
 </div>
-<footer>100% client-side — ingen data skickas till någon server</footer>
+<footer>100% gratis · ingen registrering</footer>
 
 <script>
-function convert() {
+function extractPlaceId(url) {
+  const patterns = [
+    url.match(/!1s([A-Za-z0-9_\-]+)!/)?.[1],
+    url.match(/[?&]placeid=([A-Za-z0-9_\-]+)/)?.[1],
+    url.match(/1s([A-Za-z0-9_\-]+):0x/)?.[1]
+  ];
+  return patterns.find(Boolean) || null;
+}
+
+async function convert() {
   const input = document.getElementById('urlInput');
+  const btn = document.getElementById('convertBtn');
   const result = document.getElementById('result');
   const url = input.value.trim();
 
@@ -108,47 +119,63 @@ function convert() {
     return;
   }
 
-  let placeId = null;
-
-  // Pattern 1: !1s{PLACE_ID}! (in URL data parameter)
-  const match1 = url.match(/!1s([A-Za-z0-9_\-]+)!/);
-  if (match1?.[1]) placeId = match1[1];
-
-  // Pattern 2: placeid={PLACE_ID} (URL parameter)
-  if (!placeId) {
-    const match2 = url.match(/[?&]placeid=([A-Za-z0-9_\-]+)/);
-    if (match2?.[1]) placeId = match2[1];
-  }
-
-  // Pattern 3: 1s{PLACE_ID}:0x...
-  if (!placeId) {
-    const match3 = url.match(/1s([A-Za-z0-9_\-]+):0x/);
-    if (match3?.[1]) placeId = match3[1];
-  }
+  // Försök klient-side först (full Maps-URL)
+  let placeId = extractPlaceId(url);
 
   if (placeId) {
-    const reviewUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
-    result.className = 'result success';
-    result.innerHTML = `
-      <h3>✅ Redo!</h3>
-      <div class="field">
-        <label>Recensionslänk</label>
-        <div class="value" id="reviewUrl">${reviewUrl}</div>
-      </div>
-      <button class="copy-btn" onclick="copyUrl()">📋 Kopiera</button>
-      <div class="field">
-        <label>Place ID</label>
-        <div class="value">${placeId}</div>
-      </div>
-    `;
-  } else {
-    result.className = 'result error';
-    result.innerHTML = `
-      <h3>❌ Kunde inte hitta Place ID</h3>
-      <p>Kopiera HELA Maps-URL:en från adressfältet (börjar med <code>https://www.google.com/maps/...</code>).</p>
-      <p style="margin-top:8px;font-size:13px;color:#888;">Kortlänkar som <code>maps.app.goo.gl</code> måste öppnas först.</p>
-    `;
+    showResult(placeId);
+    return;
   }
+
+  // Annars via API:et (för goo.gl-kortlänkar)
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Följer redirect...';
+  result.className = 'result';
+  result.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/convert?url=' + encodeURIComponent(url));
+    const data = await res.json();
+
+    if (data.success && data.reviewUrl) {
+      showResult(data.placeId, data.reviewUrl, data.resolvedUrl);
+    } else {
+      result.className = 'result error';
+      result.innerHTML = `
+        <h3>❌ ${data.error || 'Kunde inte hitta Place ID'}</h3>
+        ${data.resolvedUrl ? `<div class="field"><label>Resolved URL</label><div class="value">${data.resolvedUrl}</div></div>` : ''}
+        <p style="margin-top:10px;font-size:13px;color:#888;">Öppna Maps-länken i din webbläsare och kopiera hela adressen från adressfältet.</p>
+      `;
+    }
+  } catch (err) {
+    result.className = 'result error';
+    result.innerHTML = '<h3>❌ Nätverksfel</h3><p>Kunde inte följa länken. Försök öppna den i din webbläsare och kopiera hela URL:en istället.</p>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Convert';
+  }
+}
+
+function showResult(placeId, reviewUrl, resolvedUrl) {
+  if (!reviewUrl) {
+    reviewUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
+  }
+
+  const result = document.getElementById('result');
+  result.className = 'result success';
+  result.innerHTML = `
+    <h3>✅ Redo!</h3>
+    <div class="field">
+      <label>Recensionslänk</label>
+      <div class="value" id="reviewUrl">${reviewUrl}</div>
+    </div>
+    <button class="copy-btn" onclick="copyUrl()">📋 Kopiera</button>
+    <div class="field">
+      <label>Place ID</label>
+      <div class="value">${placeId}</div>
+    </div>
+    ${resolvedUrl ? `<div class="field"><label>Resolved URL</label><div class="value">${resolvedUrl}</div></div>` : ''}
+  `;
 }
 
 function copyUrl() {
@@ -165,7 +192,6 @@ function copyUrl() {
   });
 }
 
-// Enter key to convert
 document.getElementById('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') convert();
 });

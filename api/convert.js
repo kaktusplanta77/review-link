@@ -11,7 +11,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Följ redirects för att få full Maps URL
     const response = await fetch(url, {
       method: 'GET',
       redirect: 'follow',
@@ -21,18 +20,14 @@ module.exports = async (req, res) => {
     const fullUrl = response.url;
     let placeId = null;
 
-    // Olika mönster att extrahera Place ID från Maps-URL
-    if (!placeId) {
-      const m = fullUrl.match(/!1s([A-Za-z0-9_\-]+)!/);
-      if (m?.[1]) placeId = m[1];
-    }
-    if (!placeId) {
-      const m = fullUrl.match(/[?&]placeid=([A-Za-z0-9_\-]+)/);
-      if (m?.[1]) placeId = m[1];
-    }
-    if (!placeId) {
-      const m = fullUrl.match(/1s([A-Za-z0-9_\-]+):0x/);
-      if (m?.[1]) placeId = m[1];
+    const patterns = [
+      fullUrl.match(/!1s([A-Za-z0-9_\-]+)!/)?.[1],
+      fullUrl.match(/[?&]placeid=([A-Za-z0-9_\-]+)/)?.[1],
+      fullUrl.match(/1s([A-Za-z0-9_\-]+):0x/)?.[1]
+    ];
+
+    for (const p of patterns) {
+      if (p) { placeId = p; break; }
     }
 
     if (placeId) {
