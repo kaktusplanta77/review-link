@@ -11,64 +11,55 @@
       background: #f5f5f5; color: #222; min-height: 100vh;
       display: flex; flex-direction: column;
     }
-    header {
-      background: #fff; padding: 40px 24px; text-align: center;
-      border-bottom: 3px solid #1a73e8;
-    }
-    header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    header { background: #fff; padding: 40px 24px; text-align: center; border-bottom: 3px solid #1a73e8; }
+    header h1 { font-size: 28px; font-weight: 800; }
     header h1 span { color: #1a73e8; }
-    header p { color: #666; margin-top: 6px; font-size: 15px; }
+    header p { color: #666; margin-top: 4px; font-size: 15px; }
     .container { flex: 1; max-width: 640px; margin: 0 auto; padding: 40px 24px; width: 100%; }
     label { font-weight: 600; font-size: 15px; display: block; margin-bottom: 8px; }
     .input-row { display: flex; gap: 10px; }
     .input-row input {
       flex: 1; padding: 14px 18px; border: 2px solid #ddd; border-radius: 12px;
-      font-size: 15px; outline: none; transition: border-color 0.2s;
+      font-size: 15px; outline: none;
     }
     .input-row input:focus { border-color: #1a73e8; }
     .input-row button {
       padding: 14px 28px; background: #1a73e8; color: #fff; border: none;
       border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
-      transition: background 0.2s; white-space: nowrap;
+      white-space: nowrap;
     }
     .input-row button:hover { background: #1557b0; }
-    .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .result {
+    .input-row button:disabled { opacity: 0.5; }
+    .result-box {
       margin-top: 24px; padding: 20px; border-radius: 14px;
-      display: none;
+      background: #fff; border: 2px dashed #ddd;
+      min-height: 80px;
     }
-    .result.success { display: block; background: #e8f5e9; border: 1px solid #a5d6a7; }
-    .result.error { display: block; background: #ffebee; border: 1px solid #ef9a9a; }
-    .result h3 { font-size: 16px; margin-bottom: 8px; }
-    .result.success h3 { color: #2e7d32; }
-    .result.error h3 { color: #c62828; }
-    .result .field { margin-top: 10px; }
-    .result .field label { font-size: 12px; color: #666; margin-bottom: 2px; font-weight: 500; }
-    .result .field .value {
-      background: #fff; padding: 10px 14px; border-radius: 8px;
-      font-size: 14px; word-break: break-all; border: 1px solid #e0e0e0;
+    .result-box.has-result { border-style: solid; border-color: #a5d6a7; background: #e8f5e9; }
+    .result-box.has-error { border-style: solid; border-color: #ef9a9a; background: #ffebee; }
+    .result-box .placeholder { color: #aaa; font-size: 14px; text-align: center; padding-top: 18px; }
+    .result-box .review-link {
+      font-size: 14px; word-break: break-all; background: #fff;
+      padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e0e0; margin-top: 8px;
     }
-    .copy-btn {
+    .result-box .copy-btn {
       margin-top: 10px; padding: 8px 18px; background: #fff; border: 1px solid #1a73e8;
       color: #1a73e8; border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
+      cursor: pointer;
     }
-    .copy-btn:hover { background: #1a73e8; color: #fff; }
-    .copy-btn.copied { background: #2e7d32; border-color: #2e7d32; color: #fff; }
-    .example {
-      margin-top: 16px; font-size: 13px; color: #888;
-    }
-    .example a { color: #1a73e8; cursor: pointer; text-decoration: underline; }
-    footer {
-      text-align: center; padding: 20px; font-size: 13px; color: #999;
-    }
+    .result-box .copy-btn:hover { background: #1a73e8; color: #fff; }
+    .result-box .copy-btn.copied { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+    .result-box .label { font-size: 12px; color: #666; font-weight: 500; }
+    .result-box .error-text { color: #c62828; font-size: 14px; }
     .spinner {
-      display: inline-block; width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.1); border-top-color: #1a73e8;
       border-radius: 50%; animation: spin 0.6s linear infinite;
       vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #888; font-size: 14px; }
+    footer { text-align: center; padding: 20px; font-size: 13px; color: #999; }
   </style>
 </head>
 <body>
@@ -79,80 +70,58 @@
 <div class="container">
   <label for="urlInput">Klistra in din Maps-länk</label>
   <div class="input-row">
-    <input id="urlInput" type="url" placeholder="https://maps.app.goo.gl/... eller full Maps-URL" autofocus>
+    <input id="urlInput" type="url" placeholder="maps.app.goo.gl/... eller full Maps-URL">
     <button id="convertBtn" onclick="convert()">Convert</button>
   </div>
-  <p class="example">Exempel: <a onclick="useExample()">maps.app.goo.gl/XeXtHJQSL7RRwMpK9</a></p>
 
-  <div id="result" class="result"></div>
+  <div id="resultBox" class="result-box">
+    <div class="placeholder">Klistra in en Maps-URL ovan och tryck Convert</div>
+  </div>
 </div>
-<footer>Paste a Google Maps link → get a direct review link</footer>
+<footer>100% gratis · ingen registrering</footer>
 
 <script>
-async function convert() {
-  const input = document.getElementById('urlInput');
-  const btn = document.getElementById('convertBtn');
-  const result = document.getElementById('result');
-  const url = input.value.trim();
-
-  if (!url) {
-    result.className = 'result error';
-    result.innerHTML = '<h3>⚠️ Ange en URL</h3><p>Klistra in en Google Maps-länk.</p>';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Konverterar...';
-  result.className = 'result';
-  result.style.display = 'none';
-
-  try {
-    const res = await fetch('/api/convert?url=' + encodeURIComponent(url));
-    const data = await res.json();
-
-    if (data.success && data.reviewUrl) {
-      result.className = 'result success';
-      result.innerHTML = `
-        <h3>✅ Redo!</h3>
-        <div class="field">
-          <label>Recensionslänk</label>
-          <div class="value" id="reviewUrl">${data.reviewUrl}</div>
-        </div>
-        <button class="copy-btn" onclick="copyUrl()">📋 Kopiera</button>
-        <div class="field">
-          <label>Place ID</label>
-          <div class="value">${data.placeId || data.cid || '-'}</div>
-        </div>
-        <div class="field">
-          <label>Resolved URL</label>
-          <div class="value">${data.resolvedUrl}</div>
-        </div>
-      `;
-    } else {
-      result.className = 'result error';
-      result.innerHTML = `
-        <h3>❌ Kunde inte hitta Place ID</h3>
-        <p>${data.error || 'Okänt fel'}</p>
-        ${data.resolvedUrl ? `<div class="field"><label>Resolved URL</label><div class="value">${data.resolvedUrl}</div></div>` : ''}
-        <p style="margin-top:10px;font-size:13px;color:#888;">Tips: Öppna Maps-länken i en webbläsare och kopiera hela adressen från adressfältet.</p>
-      `;
-    }
-  } catch (err) {
-    result.className = 'result error';
-    result.innerHTML = '<h3>❌ Nätverksfel</h3><p>Kunde inte nå servern. Försök igen.</p>';
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = 'Convert';
-  }
+function extractPlaceId(url) {
+  const patterns = [
+    url.match(/!1s([A-Za-z0-9_\-]+)!/)?.[1],
+    url.match(/[?&]placeid=([A-Za-z0-9_\-]+)/)?.[1],
+    url.match(/1s([A-Za-z0-9_\-]+):0x/)?.[1]
+  ];
+  return patterns.find(Boolean) || null;
 }
 
-function useExample() {
-  document.getElementById('urlInput').value = 'https://maps.app.goo.gl/XeXtHJQSL7RRwMpK9';
-  convert();
+function showLoading() {
+  const box = document.getElementById('resultBox');
+  box.className = 'result-box';
+  box.innerHTML = '<div class="loading-text"><span class="spinner"></span> Följer redirect...</div>';
 }
 
-function copyUrl() {
-  const el = document.getElementById('reviewUrl');
+function showPlaceholder() {
+  const box = document.getElementById('resultBox');
+  box.className = 'result-box';
+  box.innerHTML = '<div class="placeholder">Klistra in en Maps-URL ovan och tryck Convert</div>';
+}
+
+function showResult(placeId, reviewUrl) {
+  if (!reviewUrl) reviewUrl = 'https://search.google.com/local/writereview?placeid=' + placeId;
+  const box = document.getElementById('resultBox');
+  box.className = 'result-box has-result';
+  box.innerHTML = '<div class="label">Recensionslänk</div>' +
+    '<div class="review-link" id="reviewLink">' + reviewUrl + '</div>' +
+    '<button class="copy-btn" onclick="copyLink()">📋 Kopiera</button>' +
+    '<div style="margin-top:8px;font-size:12px;color:#888;">Place ID: ' + placeId + '</div>';
+}
+
+function showError(msg) {
+  const box = document.getElementById('resultBox');
+  box.className = 'result-box has-error';
+  box.innerHTML = '<div class="error-text">❌ ' + msg + '</div>' +
+    '<div style="margin-top:8px;font-size:13px;color:#888;">Öppna Maps-länken i din webbläsare och kopiera hela adressen från adressfältet.</div>';
+}
+
+function copyLink() {
+  const el = document.getElementById('reviewLink');
+  if (!el) return;
   navigator.clipboard.writeText(el.textContent).then(() => {
     const btn = document.querySelector('.copy-btn');
     btn.textContent = '✅ Kopierad!';
@@ -164,8 +133,39 @@ function copyUrl() {
   });
 }
 
-// Enter key to convert
-document.getElementById('urlInput').addEventListener('keydown', e => {
+async function convert() {
+  const input = document.getElementById('urlInput');
+  const btn = document.getElementById('convertBtn');
+  const url = input.value.trim();
+
+  if (!url) { showPlaceholder(); return; }
+
+  // Försök client-side först
+  let placeId = extractPlaceId(url);
+  if (placeId) { showResult(placeId); return; }
+
+  // API för goo.gl-kortlänkar
+  showLoading();
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    const res = await fetch('/api/convert?url=' + encodeURIComponent(url));
+    const data = await res.json();
+    if (data.success && data.reviewUrl) {
+      showResult(data.placeId, data.reviewUrl);
+    } else {
+      showError(data.error || 'Kunde inte hitta Place ID');
+    }
+  } catch (err) {
+    showError('Kunde inte följa länken');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Convert';
+  }
+}
+
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') convert();
 });
 </script>
